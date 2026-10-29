@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>d3 Studio</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --text:#1c2230; --muted:#667085; --line:#dde1e8;
+  --accent:#2f6fed; --accent-weak:#e8f0ff; --bar:#a9c2f7; --err:#b42318; --err-bg:#fdecea; --ok:#12805c;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1318; --panel:#171c24; --text:#e7eaf0; --muted:#8f99ab; --line:#2a3240;
+    --accent:#76a0ff; --accent-weak:#1d2944; --bar:#35538f; --err:#ff8f85; --err-bg:#3a1b19; --ok:#4cc79a;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.muted{color:var(--muted)} .small{font-size:12px} .mono{font-family:var(--mono)}
+header.top{position:sticky;top:0;z-index:20;display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+  padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font-weight:700;font-size:16px;letter-spacing:.2px}
+.brand span{color:var(--accent)}
+.conn{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);max-width:360px}
+.dot{width:9px;height:9px;border-radius:50%;background:#999;flex:none}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--err)}
+.grow{flex:1}
+[hidden]{display:none!important}
+label.f{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+input,select,textarea,button{font:inherit;color:inherit}
+input[type=text],input[type=number],select,textarea{
+  background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:6px 9px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{width:100%;resize:vertical;font-family:var(--mono);font-size:12.5px}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:7px 16px}
+button.primary.stop{background:var(--err);border-color:var(--err)}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+button.icon{padding:4px 8px;border-color:transparent;background:transparent;color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+nav.tabs{display:flex;gap:4px;padding:10px 18px 0;max-width:1280px;margin:0 auto}
+nav.tabs button{border-radius:8px 8px 0 0;border-bottom:none;background:transparent;color:var(--muted)}
+nav.tabs button.on{background:var(--panel);color:var(--text);font-weight:600;border-color:var(--line)}
+main{max-width:1280px;margin:0 auto;padding:0 18px 60px}
+section.pane{display:none;background:var(--panel);border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:18px}
+section.pane.on{display:block}
+h2{font-size:15px;margin:0 0 4px} h3{font-size:13px;margin:16px 0 6px}
+.bar-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.qcard{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0;background:var(--bg)}
+.qhead{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.qhead input.id{font-family:var(--mono);width:200px;font-weight:600}
+.qcard .row{display:flex;gap:6px;margin:4px 0;align-items:center}
+.qcard .row input.k{width:170px;font-family:var(--mono)}
+.qcard .row input.v,.qcard .row input.lv{flex:1}
+.qcard label.lab{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+.qcard input.full,.qcard textarea.full{width:100%}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;background:var(--accent-weak);color:var(--accent);font-size:11.5px}
+.subtabs{display:flex;gap:6px;margin-bottom:14px}
+.subtabs button.on{background:var(--accent-weak);border-color:var(--accent);color:var(--accent);font-weight:600}
+.opts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--muted);cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-weak)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.thumb{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.thumb img{display:block;width:100%;height:96px;object-fit:cover}
+.thumb .cap{padding:4px 6px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb button{position:absolute;top:4px;right:4px;padding:1px 6px;background:var(--panel)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:70vh}
+table{border-collapse:collapse;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);cursor:pointer;user-select:none;font-size:12px;color:var(--muted);z-index:2}
+th.sorted{color:var(--accent)}
+tbody tr{cursor:pointer} tbody tr:hover{background:var(--accent-weak)}
+tr.hit td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+td.lab{max-width:380px;white-space:normal}
+td.lab .t{display:flex;gap:8px;align-items:center}
+td.lab img{width:42px;height:42px;object-fit:cover;border-radius:6px;flex:none}
+td.lab span.txt{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+td.err{color:var(--err);background:var(--err-bg);white-space:normal}
+.meter{display:inline-block;width:70px;height:8px;border-radius:4px;background:var(--line);vertical-align:middle;overflow:hidden}
+.meter>span{display:block;height:100%;background:var(--accent)}
+td.num b{margin-left:8px;font-weight:600;font-variant-numeric:tabular-nums}
+td.ch{font-variant-numeric:tabular-nums}
+td.ch .top{font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg);cursor:pointer}
+.card.hit{border-color:var(--accent)}
+.card h4{margin:0 0 6px;font-size:13px;display:flex;gap:8px;align-items:center}
+.card .imgs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.card .imgs img{height:80px;border-radius:6px}
+.card .qn{font-size:11.5px;color:var(--muted);margin:8px 0 3px;font-family:var(--mono)}
+.pbars .pb{display:flex;align-items:center;gap:8px;font-size:12px;margin:2px 0}
+.pbars .pbk{width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbars .pb.top .pbk{font-weight:700}
+.pbars .pbv{font-variant-numeric:tabular-nums;color:var(--muted)}
+.pbars .meter{width:120px;flex:none}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:14px}
+.chart{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg)}
+.chart h4{margin:0 0 2px;font-size:13px;font-family:var(--mono)}
+svg text{fill:var(--muted);font-size:11px}
+svg .bar{fill:var(--accent)} svg .barw{fill:var(--bar)}
+svg .thr{stroke:var(--err);stroke-dasharray:4 3}
+pre.json{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;max-height:70vh;font:12px/1.45 var(--mono);margin:0}
+.summary{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.progress{height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:1;min-width:140px}
+.progress>span{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);max-width:820px;width:92vw;padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:240px;overflow:auto;font:12px/1.45 var(--mono)}
+dialog img.big{max-width:100%;max-height:260px;border-radius:8px;margin:4px 6px 4px 0}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--text);color:var(--bg);
+  padding:9px 16px;border-radius:9px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:50}
+#toast.on{opacity:1}
+.errs{background:var(--err-bg);color:var(--err);border-radius:8px;padding:8px 12px;margin:10px 0}
+.errs ul{margin:4px 0 0 18px;padding:0}
+.hint{background:var(--accent-weak);border-radius:8px;padding:8px 12px;margin:10px 0;font-size:12.5px}
+.pdfrow{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:6px 0;background:var(--bg)}
+.pdfrow .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46%}
+.pdfrow .st{flex:1;color:var(--muted);font-size:12px}
+.pdfrow .st.bad{color:var(--err)}
+.verdict{display:inline-block;min-width:38px;text-align:center;border-radius:6px;padding:1px 8px;font-weight:700;font-size:12px}
+.verdict.yes{background:var(--accent);color:#fff} .verdict.no{background:var(--line);color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">d3 <span>Studio</span></div>
+  <div class="conn"><span id="dot" class="dot"></span><span id="connText">Verifica connessione…</span></div>
+  <label class="f">Modello
+    <input id="model" type="text" list="models" style="width:190px" spellcheck="false" autocomplete="off">
+    <datalist id="models"></datalist>
+  </label>
+  <button id="btnConn" class="ghost" title="Ricarica l'elenco dei modelli">↻</button>
+  <div class="grow"></div>
+  <label class="f">Parallele
+    <select id="conc"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+  </label>
+  <button id="btnPreview">Anteprima richiesta</button>
+  <button id="btnRun" class="primary">▶ Esegui</button>
+</header>
+
+<nav class="tabs">
+  <button data-tab="q" class="on">1 · Domande</button>
+  <button data-tab="in">2 · Input</button>
+  <button data-tab="res">3 · Risultati</button>
+</nav>
+
+<main>
+<!-- ===================== DOMANDE ===================== -->
+<section id="tab-q" class="pane on">
+  <h2>Domande</h2>
+  <p class="muted small" style="margin:0 0 8px">Ogni domanda riceve una probabilità per ogni opzione. Tutte le domande vengono poste insieme sullo stesso input.</p>
+  <div class="bar-row">
+    <select id="presetSel"></select>
+    <button id="btnLoadSet">Carica</button>
+    <button id="btnSaveSet">Salva questo set…</button>
+    <button id="btnDelSet">Elimina set salvato</button>
+    <span class="grow"></span>
+    <button id="btnExpQ">Esporta JSON</button>
+    <button id="btnImpQ">Importa JSON</button>
+    <input id="fileImpQ" type="file" accept=".json,application/json" hidden>
+  </div>
+  <div id="qerrs"></div>
+  <div id="qlist"></div>
+  <div class="bar-row"><button id="btnAddQ" class="primary" style="padding:6px 14px">+ Aggiungi domanda</button></div>
+  <div class="hint small">
+    <b>Sì / No</b>: probabilità che la condizione sia vera. <b>Scelta</b>: una sola opzione tra quelle elencate (la chiave è il nome che vedrai nei risultati, la descrizione aiuta il modello). <b>Scala</b>: livelli ordinati dal più basso al più alto; con Ollama i livelli sono solo etichette, senza descrizione.
+  </div>
+</section>
+
+<!-- ===================== INPUT ===================== -->
+<section id="tab-in" class="pane">
+  <h2>Input</h2>
+  <div class="subtabs">
+    <button data-in="text" class="on">Testo</button>
+    <button data-in="csv">CSV / lista</button>
+    <button data-in="img">Immagini</button>
+    <button data-in="pdf">PDF</button>
+  </div>
+
+  <div id="in-text">
+    <textarea id="txt" rows="11" placeholder="Incolla qui un testo, un log o un evento."></textarea>
+    <div class="opts">
+      <label class="f">Come dividere il testo
+        <select id="textMode">
+          <option value="single">Un solo elemento</option>
+          <option value="lines">Un elemento per riga</option>
+          <option value="blank">Elementi separati da riga vuota</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="in-csv" hidden>
+    <div class="drop" id="csvDrop">Trascina qui un file CSV, TSV o TXT, oppure clicca per sceglierlo
+      <input id="csvFile" type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden></div>
+    <p class="muted small">…oppure incolla il contenuto:</p>
+    <textarea id="csvText" rows="5" placeholder="colonna1,colonna2&#10;valore,valore"></textarea>
+    <div class="opts">
+      <label class="f"><input id="csvHeader" type="checkbox"> La prima riga è l'intestazione</label>
+      <label class="f">Separatore
+        <select id="csvDelim"><option value="auto">Automatico</option><option value=",">,</option><option value=";">;</option><option value="&#9;">Tab</option><option value="|">|</option></select>
+      </label>
+      <label class="f">Formato inviato al modello
+        <select id="csvFormat">
+          <option value="json">JSON {colonna: valore}</option>
+          <option value="text">Righe «colonna: valore»</option>
+          <option value="plain">Solo valori</option>
+        </select>
+      </label>
+      <label class="f">Max righe (0 = tutte) <input id="csvMax" type="number" min="0" style="width:80px"></label>
+      <label class="f">Colonna etichetta
+        <select id="csvLabel"></select>
+      </label>
+    </div>
+    <div id="csvCols"></div>
+    <div id="csvPreview"></div>
+  </div>
+
+  <div id="in-img" hidden>
+    <div class="drop" id="imgDrop">Trascina qui le immagini (PNG, JPEG, WebP) o clicca per sceglierle
+      <input id="imgFile" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden></div>
+    <div class="opts">
+      <label class="f">Lato massimo
+        <select id="imgMax">
+          <option value="0">Originale</option><option value="1600">1600 px</option><option value="1280">1280 px</option>
+          <option value="1024">1024 px</option><option value="768">768 px</option><option value="512">512 px</option>
+        </select>
+      </label>
+      <label class="f">Richieste
+        <select id="imgMode">
+          <option value="each">Una per immagine</option>
+          <option value="all">Tutte le immagini in una richiesta</option>
+        </select>
+      </label>
+      <label class="f">Codifica
+        <select id="imgEnc"><option value="raw">base64 puro</option><option value="dataurl">data URL</option></select>
+      </label>
+    </div>
+    <label class="f" style="display:block">Testo di contesto inviato insieme alle immagini
+      <input id="imgCtx" type="text" style="width:100%;margin-top:4px"></label>
+    <div id="imgInfo" class="muted small" style="margin-top:8px"></div>
+    <div id="thumbs" class="thumbs"></div>
+  </div>
+
+  <div id="in-pdf" hidden>
+    <div class="drop" id="pdfDrop">Trascina qui uno o più PDF, oppure clicca per sceglierli
+      <input id="pdfFile" type="file" accept="application/pdf,.pdf" multiple hidden></div>
+    <div id="pdfNote"></div>
+    <div id="pdfList"></div>
+    <div class="opts">
+      <label class="f">Cosa inviare al modello
+        <select id="pdfMode"><option value="text">Testo estratto, a blocchi</option><option value="images">Pagine come immagini</option></select></label>
+      <label class="f">Dimensione blocco (caratteri) <input id="pdfChunk" type="number" min="200" step="500" style="width:90px"></label>
+      <label class="f">Blocchi per PDF (0 = tutti) <input id="pdfMax" type="number" min="0" style="width:70px"></label>
+      <label class="f">Pagine per PDF (immagini) <input id="pdfPages" type="number" min="1" max="50" style="width:70px"></label>
+      <label class="f">Risoluzione
+        <select id="pdfDpi"><option value="72">72 dpi</option><option value="96">96 dpi</option><option value="120">120 dpi</option><option value="150">150 dpi</option></select></label>
+    </div>
+    <div class="hint small">
+      Il PDF viene convertito in testo (o in immagini) e ogni parte diventa una richiesta a d3, perché il contesto è di 4.096 token: un blocco da 3.000 caratteri ci sta, una pagina come immagine occupa molto di più.
+      Se i blocchi sono più del limite scelto, vengono presi a intervalli regolari su tutto il documento (primo e ultimo compresi). Il risultato per documento si legge nella vista <b>Documenti</b>, con la regola scelta (massimo, media o maggioranza).
+      I PDF scansionati non hanno testo: usa «Pagine come immagini».
+    </div>
+  </div>
+
+  <div class="opts" style="border-top:1px solid var(--line);padding-top:12px;margin-top:16px">
+    <label class="f">Limite caratteri per elemento (0 = nessuno)
+      <input id="maxChars" type="number" min="0" style="width:90px"></label>
+    <span class="muted small">Ollama non tronca l'input: se testo e immagini superano il contesto del modello (4096 token nei pacchetti d3), la richiesta fallisce.</span>
+  </div>
+</section>
+
+<!-- ===================== RISULTATI ===================== -->
+<section id="tab-res" class="pane">
+  <div class="summary">
+    <div id="sumText" class="muted">Nessun risultato.</div>
+    <div class="progress"><span id="progBar"></span></div>
+  </div>
+  <div class="bar-row" id="resControls">
+    <span class="subtabs" style="margin:0" id="viewBtns">
+      <button data-view="table">Tabella</button>
+      <button data-view="cards">Schede</button>
+      <button data-view="charts">Grafici</button>
+      <button data-view="docs" id="btnDocs" hidden>Documenti</button>
+      <button data-view="json">JSON</button>
+    </span>
+    <label class="f">Domanda di riferimento <select id="refQ"></select></label>
+    <label class="f" id="docRuleWrap" hidden>Regola documento <select id="docRule"><option value="max">massimo dei blocchi</option><option value="mean">media dei blocchi</option><option value="majority">maggioranza dei blocchi</option></select></label>
+    <label class="f">Soglia <input id="thr" type="range" min="0" max="1" step="0.01" style="width:120px"> <b id="thrVal" class="mono">0.50</b></label>
+    <label class="f"><input id="onlyHits" type="checkbox"> solo sopra soglia</label>
+    <input id="search" type="text" placeholder="Cerca…" style="width:150px">
+    <span class="grow"></span>
+    <button id="btnCSV">Esporta CSV</button>
+    <button id="btnJSON">Esporta JSON</button>
+  </div>
+  <div id="resBody"></div>
+</section>
+</main>
+
+<dialog id="dlg">
+  <div id="dlgBody"></div>
+  <div class="bar-row" style="justify-content:flex-end"><button id="dlgCopy" hidden>Copia</button><button id="dlgClose">Chiudi</button></div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ---------- utilità ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  let val;
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k === 'value') val = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat(Infinity)) {
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  if (val !== undefined) e.value = val;
+  return e;
+}
+function sv(tag, attrs, ...kids) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  for (const c of kids.flat(Infinity)) if (c != null) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('d3studio.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('d3studio.' + k, JSON.stringify(v)); } catch { /* ignora */ } }
+};
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3800);
+}
+const fmtP = p => (p == null || Number.isNaN(p)) ? '–' : Number(p).toFixed(3);
+const clip = (s, n) => { s = String(s ?? ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+function download(name, mime, text) {
+  const a = h('a', { href: URL.createObjectURL(new Blob([text], { type: mime })), download: name });
+  document.body.append(a); a.click(); a.remove();
+}
+
+/* ---------- impostazioni ---------- */
+const S = Object.assign({
+  model: 'd3:latest', conc: 1, maxChars: 3500, thr: 0.5, refQ: '', view: 'table', onlyHits: false,
+  textMode: 'lines', csvHeader: true, csvDelim: 'auto', csvFormat: 'json', csvMax: 0,
+  imgMax: 1280, imgMode: 'each', imgCtx: 'Photo to analyze.', imgEnc: 'raw',
+  pdfMode: 'text', pdfChunk: 3000, pdfMax: 5, pdfPages: 3, pdfDpi: 96, docRule: 'max'
+}, store.get('settings', {}));
+const saveS = () => store.set('settings', S);
+
+/* ---------- domande ---------- */
+const TYPES = { noul: 'Sì / No', choice: 'Scelta', score: 'Scala' };
+const mkQ = (type, id, instructions, extra) => Object.assign({ id, type, instructions, t: '', f: '', opts: [], levels: [] }, extra || {});
+const PRESETS = {
+  triage: { name: 'Triage log di sicurezza', make: () => [
+    mkQ('noul', 'needs_investigation', 'Does this endpoint security event show activity that a SOC analyst should investigate?', {
+      t: 'Suspicious process execution, encoded commands, credential access, lateral movement, persistence, defense evasion, exfiltration or tampering with security tools.',
+      f: 'Routine, expected system, software or user activity.' }),
+    mkQ('noul', 'benign_admin', 'Is this event most likely legitimate administrative or software-management activity?', {
+      t: 'Normal admin tooling, software updates, backups, monitoring or inventory activity.', f: 'Not clearly legitimate administrative activity.' }),
+    mkQ('choice', 'tactic', 'Which MITRE ATT&CK tactic best describes this event?', { opts: [
+      { k: 'none', v: 'No attack behaviour, routine activity' }, { k: 'execution', v: 'Running commands, scripts or malicious code' },
+      { k: 'persistence', v: 'Services, scheduled tasks, run keys' }, { k: 'defense_evasion', v: 'Disabling security tools, obfuscation' },
+      { k: 'credential_access', v: 'Stealing or dumping credentials' }, { k: 'discovery', v: 'Enumerating system, network or accounts' },
+      { k: 'lateral_movement', v: 'Moving to other hosts' }, { k: 'exfiltration', v: 'Sending data out of the network' },
+      { k: 'impact', v: 'Encryption or destruction of data' }] }),
+    mkQ('score', 'priority', 'How urgent is it for an analyst to look at this event?', { levels: ['Low', 'Medium', 'High', 'Critical'] })
+  ] },
+  foto: { name: 'Foto: persone, capelli, occhiali', make: () => [
+    mkQ('noul', 'has_people', 'Is at least one real person visible in the photo?', {
+      t: 'At least one real person is visible, even partially.', f: 'No real person is visible (empty scene, objects, animals, drawings or statues only).' }),
+    mkQ('choice', 'hair', 'Looking at the people in the photo, what can be said about their hair?', { opts: [
+      { k: 'no_people', v: 'There are no people in the photo.' }, { k: 'hair_visible', v: 'Every visible person has visible hair on the head.' },
+      { k: 'bald_or_shaved', v: 'Every visible person is bald or has a shaved head.' }, { k: 'mixed', v: 'Some visible people have hair and some are bald or shaved.' },
+      { k: 'not_visible', v: 'The hair cannot be judged: head covered, person turned away, cut off by the frame, or too small.' }] }),
+    mkQ('choice', 'glasses', 'Looking at the people in the photo, are they wearing glasses?', { opts: [
+      { k: 'no_people', v: 'There are no people in the photo.' }, { k: 'glasses', v: 'Every visible person wears glasses or sunglasses.' },
+      { k: 'no_glasses', v: 'No visible person wears glasses or sunglasses.' }, { k: 'mixed', v: 'Some visible people wear glasses and some do not.' },
+      { k: 'not_visible', v: 'It cannot be judged: face turned away, hidden, cut off by the frame, or too small.' }] })
+  ] },
+  smistamento: { name: 'Smistamento richieste di supporto', make: () => [
+    mkQ('choice', 'team', 'Which team should handle this request?', { opts: [
+      { k: 'billing', v: 'Invoices and charges' }, { k: 'returns', v: 'Refunds and replacements' }, { k: 'technical', v: 'App errors and faults' }] }),
+    mkQ('score', 'urgency', 'How urgent is this request?', { levels: ['Routine', 'Soon', 'Today'] })
+  ] },
+  pdf: { name: 'PDF: parla di medicina?', make: () => [
+    mkQ('noul', 'is_medical', 'Does this text discuss medicine, healthcare, diseases, diagnosis or treatments?', {
+      t: 'The text is mainly about medicine, health care, diseases, diagnosis, treatment or clinical research.',
+      f: 'The text is about something else.' }),
+    mkQ('choice', 'topic', 'What is the main subject of this text?', { opts: [
+      { k: 'medicine', v: 'Medicine, health care, clinical topics' }, { k: 'law', v: 'Law, regulations, contracts' },
+      { k: 'finance', v: 'Finance, accounting, economics' }, { k: 'technology', v: 'Software, IT, engineering' },
+      { k: 'science', v: 'Natural sciences other than medicine' }, { k: 'other', v: 'Anything else' }] })
+  ] },
+  vuoto: { name: 'Set vuoto', make: () => [] }
+};
+let Q = store.get('questions', null) || PRESETS.triage.make();
+const persistQ = () => store.set('questions', Q);
+function ensureDefaults(q) {
+  q.opts = q.opts || []; q.levels = q.levels || [];
+  if (q.type === 'choice' && q.opts.length < 2) q.opts = [{ k: 'option_a', v: '' }, { k: 'option_b', v: '' }];
+  if (q.type === 'score' && q.levels.length < 2) q.levels = ['Low', 'High'];
+}
+function buildQuestions(src = Q) {
+  const out = {};
+  for (const q of src) {
+    const o = { type: q.type, instructions: q.instructions };
+    if (q.type === 'noul') {
+      if (q.t || q.f) o.criteria = { true: q.t || 'The condition is true.', false: q.f || 'The condition is false.' };
+    } else if (q.type === 'choice') {
+      o.criteria = Object.fromEntries(q.opts.map(x => [x.k, x.v || null]));
+    } else {
+      o.criteria = q.levels.filter(Boolean);
+    }
+    out[q.id] = o;
+  }
+  return out;
+}
+function validate() {
+  const errs = [], ids = new Set();
+  if (!S.model.trim()) errs.push('Indica il modello.');
+  if (!Q.length) errs.push('Aggiungi almeno una domanda.');
+  Q.forEach((q, i) => {
+    const n = 'Domanda ' + (i + 1) + (q.id ? ' (' + q.id + ')' : '');
+    if (!q.id.trim()) errs.push(n + ': manca l\'ID.');
+    else if (ids.has(q.id)) errs.push(n + ': ID duplicato.');
+    ids.add(q.id);
+    if (!q.instructions.trim()) errs.push(n + ': mancano le istruzioni.');
+    if (q.type === 'choice') {
+      const ks = q.opts.map(o => o.k);
+      if (ks.length < 2) errs.push(n + ': servono almeno 2 opzioni.');
+      if (ks.some(k => !k)) errs.push(n + ': ogni opzione ha bisogno di una chiave.');
+      if (new Set(ks).size !== ks.length) errs.push(n + ': chiavi delle opzioni duplicate.');
+    }
+    if (q.type === 'score' && q.levels.filter(Boolean).length < 2) errs.push(n + ': servono almeno 2 livelli.');
+  });
+  return errs;
+}
+
+function renderQuestions() {
+  const box = $('#qlist'); box.replaceChildren();
+  if (!Q.length) box.append(h('p', { class: 'muted' }, 'Nessuna domanda. Aggiungine una o carica un set.'));
+  Q.forEach((q, i) => box.append(qCard(q, i)));
+  renderRefSelect();
+}
+function qCard(q, i) {
+  const move = d => () => { const j = i + d; if (j < 0 || j >= Q.length) return; [Q[i], Q[j]] = [Q[j], Q[i]]; persistQ(); renderQuestions(); };
+  const head = h('div', { class: 'qhead' },
+    h('span', { class: 'pill' }, '#' + (i + 1)),
+    h('input', { class: 'id', type: 'text', value: q.id, placeholder: 'id_domanda', spellcheck: 'false',
+      oninput: e => { q.id = e.target.value.trim().replace(/\s+/g, '_'); persistQ(); renderRefSelect(); } }),
+    h('select', { value: q.type, onchange: e => { q.type = e.target.value; ensureDefaults(q); persistQ(); renderQuestions(); } },
+      Object.entries(TYPES).map(([k, v]) => h('option', { value: k }, v))),
+    h('span', { class: 'grow' }),
+    h('button', { class: 'icon', title: 'Su', onclick: move(-1) }, '↑'),
+    h('button', { class: 'icon', title: 'Giù', onclick: move(1) }, '↓'),
+    h('button', { class: 'icon', title: 'Duplica', onclick: () => { Q.splice(i + 1, 0, JSON.parse(JSON.stringify(q))); Q[i + 1].id += '_copia'; persistQ(); renderQuestions(); } }, '⧉'),
+    h('button', { class: 'icon', title: 'Elimina', onclick: () => { Q.splice(i, 1); persistQ(); renderQuestions(); } }, '✕'));
+  const instr = h('div', {},
+    h('label', { class: 'lab' }, 'Domanda / istruzioni per il modello'),
+    h('textarea', { class: 'full', rows: 2, value: q.instructions, style: 'font-family:inherit;font-size:14px',
+      oninput: e => { q.instructions = e.target.value; persistQ(); } }));
+  let body;
+  if (q.type === 'noul') {
+    body = h('div', {},
+      h('label', { class: 'lab' }, 'Quando è vero (opzionale)'),
+      h('input', { class: 'full', type: 'text', value: q.t, oninput: e => { q.t = e.target.value; persistQ(); } }),
+      h('label', { class: 'lab' }, 'Quando è falso (opzionale)'),
+      h('input', { class: 'full', type: 'text', value: q.f, oninput: e => { q.f = e.target.value; persistQ(); } }));
+  } else if (q.type === 'choice') {
+    body = h('div', {}, h('label', { class: 'lab' }, 'Opzioni: chiave e descrizione'),
+      q.opts.map((o, j) => h('div', { class: 'row' },
+        h('input', { class: 'k', type: 'text', value: o.k, placeholder: 'chiave', spellcheck: 'false',
+          oninput: e => { o.k = e.target.value.trim().replace(/\s+/g, '_'); persistQ(); } }),
+        h('input', { class: 'v', type: 'text', value: o.v, placeholder: 'descrizione (opzionale)',
+          oninput: e => { o.v = e.target.value; persistQ(); } }),
+        h('button', { class: 'icon', onclick: () => { q.opts.splice(j, 1); persistQ(); renderQuestions(); } }, '✕'))),
+      h('button', { onclick: () => { q.opts.push({ k: 'opzione_' + (q.opts.length + 1), v: '' }); persistQ(); renderQuestions(); } }, '+ opzione'));
+  } else {
+    body = h('div', {}, h('label', { class: 'lab' }, 'Livelli, dal più basso al più alto'),
+      q.levels.map((lv, j) => h('div', { class: 'row' },
+        h('span', { class: 'muted small', style: 'width:18px' }, j + 1),
+        h('input', { class: 'lv', type: 'text', value: lv, oninput: e => { q.levels[j] = e.target.value; persistQ(); } }),
+        h('button', { class: 'icon', onclick: () => { q.levels.splice(j, 1); persistQ(); renderQuestions(); } }, '✕'))),
+      h('button', { onclick: () => { q.levels.push(''); persistQ(); renderQuestions(); } }, '+ livello'));
+  }
+  return h('div', { class: 'qcard' }, head, instr, body);
+}
+
+/* set di domande: predefiniti, salvati, import/export */
+function renderPresetSel() {
+  const sel = $('#presetSel'); sel.replaceChildren();
+  const g1 = h('optgroup', { label: 'Modelli pronti' }, Object.entries(PRESETS).map(([k, p]) => h('option', { value: 'p:' + k }, p.name)));
+  sel.append(g1);
+  const sets = store.get('sets', {});
+  if (Object.keys(sets).length) sel.append(h('optgroup', { label: 'I miei set' }, Object.keys(sets).map(n => h('option', { value: 's:' + n }, n))));
+}
+function loadSet() {
+  const v = $('#presetSel').value; if (!v) return;
+  if (v.startsWith('p:')) Q = PRESETS[v.slice(2)].make();
+  else { const sets = store.get('sets', {}); Q = JSON.parse(JSON.stringify(sets[v.slice(2)] || [])); }
+  Q.forEach(ensureDefaults); persistQ(); renderQuestions(); toast('Set caricato.');
+}
+
+/* ---------- input ---------- */
+let inputMode = 'text', csvData = null, csvSel = new Set(), csvLabel = -1, imgFiles = [], pdfs = [], tools = {};
+
+function detectDelim(text) {
+  const first = text.split(/\r?\n/, 1)[0] || '';
+  let best = ',', n = -1;
+  for (const d of [',', ';', '\t', '|']) { const c = first.split(d).length; if (c > n) { n = c; best = d; } }
+  return best;
+}
+function parseCSV(text, delim) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c;
+    } else if (c === '"') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.length > 1 || row[0] !== '') rows.push(row); row = []; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+function loadCSVText(text) {
+  text = text.replace(/^\ufeff/, '');
+  if (!text.trim()) { csvData = null; renderCSV(); return; }
+  const delim = S.csvDelim === 'auto' ? detectDelim(text) : S.csvDelim;
+  const rows = parseCSV(text, delim);
+  if (!rows.length) { csvData = null; renderCSV(); return; }
+  const width = Math.max(...rows.map(r => r.length));
+  let header, data;
+  if (S.csvHeader) { header = rows[0].map((c, i) => c.trim() || 'col' + (i + 1)); data = rows.slice(1); }
+  else { header = Array.from({ length: width }, (_, i) => 'col' + (i + 1)); data = rows; }
+  while (header.length < width) header.push('col' + (header.length + 1));
+  csvData = { header, rows: data, delim };
+  csvSel = new Set(header.map((_, i) => i)); csvLabel = -1;
+  renderCSV();
+}
+function renderCSV() {
+  const cols = $('#csvCols'), prev = $('#csvPreview'), lab = $('#csvLabel');
+  cols.replaceChildren(); prev.replaceChildren(); lab.replaceChildren();
+  lab.append(h('option', { value: -1 }, '(nessuna: usa il contenuto)'));
+  if (!csvData) { prev.append(h('p', { class: 'muted small' }, 'Nessun CSV caricato.')); return; }
+  csvData.header.forEach((c, i) => lab.append(h('option', { value: i }, c)));
+  lab.value = csvLabel;
+  cols.append(h('div', { class: 'muted small', style: 'margin:8px 0 4px' }, 'Colonne da inviare al modello:'),
+    h('div', { class: 'opts', style: 'margin:0' }, csvData.header.map((c, i) => h('label', { class: 'f' },
+      h('input', { type: 'checkbox', checked: csvSel.has(i), onchange: e => { e.target.checked ? csvSel.add(i) : csvSel.delete(i); } }), c))));
+  const shown = csvData.rows.slice(0, 5);
+  prev.append(h('div', { class: 'muted small', style: 'margin:10px 0 4px' }, csvData.rows.length + ' righe · separatore «' + (csvData.delim === '\t' ? 'Tab' : csvData.delim) + '» · anteprima:'),
+    h('div', { class: 'tablewrap', style: 'max-height:200px' }, h('table', {},
+      h('thead', {}, h('tr', {}, csvData.header.map(c => h('th', {}, c)))),
+      h('tbody', {}, shown.map(r => h('tr', { style: 'cursor:default' }, csvData.header.map((_, i) => h('td', { class: 'lab' }, clip(r[i] ?? '', 90)))))))));
+}
+
+const readURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
+const loadImg = u => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('immagine non leggibile')); i.src = u; });
+async function addImages(files) {
+  for (const f of files) {
+    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { toast('Formato non supportato: ' + f.name + ' (solo PNG, JPEG, WebP)'); continue; }
+    try {
+      const orig = await readURL(f), img = await loadImg(orig);
+      const k = 120 / Math.max(img.naturalWidth, img.naturalHeight);
+      const c = h('canvas', { width: Math.max(1, Math.round(img.naturalWidth * k)), height: Math.max(1, Math.round(img.naturalHeight * k)) });
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      imgFiles.push({ name: f.name, orig, w: img.naturalWidth, h: img.naturalHeight, thumb: c.toDataURL('image/jpeg', 0.7), cache: {} });
+    } catch (e) { toast('Errore su ' + f.name + ': ' + e.message); }
+  }
+  renderImgs();
+}
+async function resizedURL(f, maxSide) {
+  if (!maxSide || Math.max(f.w, f.h) <= maxSide) return f.orig;
+  if (f.cache[maxSide]) return f.cache[maxSide];
+  const img = await loadImg(f.orig), k = maxSide / Math.max(f.w, f.h);
+  const c = h('canvas', { width: Math.round(f.w * k), height: Math.round(f.h * k) });
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return (f.cache[maxSide] = c.toDataURL('image/jpeg', 0.9));
+}
+function renderImgs() {
+  const box = $('#thumbs'); box.replaceChildren();
+  imgFiles.forEach((f, i) => box.append(h('div', { class: 'thumb' },
+    h('img', { src: f.thumb, alt: f.name }),
+    h('button', { title: 'Rimuovi', onclick: () => { imgFiles.splice(i, 1); renderImgs(); } }, '✕'),
+    h('div', { class: 'cap', title: f.name }, f.name + ' · ' + f.w + '×' + f.h))));
+  const kb = imgFiles.reduce((s, f) => s + f.orig.length * 0.75, 0) / 1024 / 1024;
+  $('#imgInfo').textContent = imgFiles.length ? imgFiles.length + ' immagini · ' + kb.toFixed(1) + ' MB originali. Ollama accetta richieste fino a 32 MiB con immagini.' : '';
+}
+
+/* ---------- PDF ---------- */
+function normText(s) {
+  return s.replace(/-\n(?=\p{Ll})/gu, '').replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function docText(d) {
+  if (d._txt != null) return d._txt;
+  let txt = ''; d._starts = [];
+  (d.pages || []).forEach(pg => { d._starts.push(txt.length); txt += normText(pg) + '\n\n'; });
+  return (d._txt = txt);
+}
+function pageAt(d, off) {
+  let k = 0;
+  for (let i = 0; i < d._starts.length; i++) { if (d._starts[i] <= off) k = i; else break; }
+  return k + 1;
+}
+function chunkDoc(d, size) {
+  const txt = docText(d), out = []; let i = 0;
+  while (i < txt.length) {
+    let j = Math.min(txt.length, i + size);
+    if (j < txt.length) {
+      const k = Math.max(txt.lastIndexOf('\n\n', j), txt.lastIndexOf('. ', j));
+      if (k > i + size * 0.6) j = k + 1;
+    }
+    const part = txt.slice(i, j).trim();
+    if (part.length >= 20) out.push({ text: part, p1: pageAt(d, i), p2: pageAt(d, Math.max(i, j - 1)) });
+    i = j;
+  }
+  return out;
+}
+function pickEven(arr, k) {
+  if (!k || k >= arr.length) return arr;
+  if (k === 1) return [arr[0]];
+  return Array.from({ length: k }, (_, i) => arr[Math.round(i * (arr.length - 1) / (k - 1))]);
+}
+function renderPdfList() {
+  const note = $('#pdfNote'); note.replaceChildren();
+  if (tools.pdftotext === false) note.append(h('div', { class: 'errs' }, 'Sul computer che esegue d3 Studio manca poppler: ',
+    h('span', { class: 'mono' }, 'sudo apt install poppler-utils'), ', poi riavvia il server.'));
+  const box = $('#pdfList'); box.replaceChildren();
+  pdfs.forEach((d, i) => box.append(h('div', { class: 'pdfrow' },
+    h('span', { class: 'nm', title: d.name }, d.name),
+    h('span', { class: 'st' + (d.err ? ' bad' : '') }, d.status),
+    h('button', { class: 'icon', title: 'Rimuovi', onclick: () => { pdfs.splice(i, 1); renderPdfList(); } }, '✕'))));
+}
+async function addPdfs(files) {
+  for (const f of files) {
+    if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') { toast('Non è un PDF: ' + f.name); continue; }
+    const d = { name: f.name, file: f, pages: null, n: 0, chars: 0, status: 'estrazione del testo…', err: null };
+    pdfs.push(d); renderPdfList();
+    try {
+      const r = await fetch('/pdf/extract', { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: f });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+      d.pages = j.pages; d.n = j.pages.length; d.chars = j.pages.reduce((a, b) => a + b.length, 0);
+      d.status = d.n + ' pagine · ' + d.chars.toLocaleString('it-IT') + ' caratteri'
+        + (d.chars < 30 * Math.max(1, d.n) ? ' · quasi senza testo: forse è una scansione, usa «Pagine come immagini»' : '');
+    } catch (e) { d.err = e.message; d.status = e.message; }
+    renderPdfList();
+  }
+}
+async function collectPdfItems() {
+  const items = [], cutLen = +S.maxChars || 0, noText = [];
+  for (const d of pdfs) {
+    if (!d.file) continue;
+    if (S.pdfMode === 'images') {
+      const want = Math.max(1, Math.min(50, +S.pdfPages || 3)), n = d.n ? Math.min(d.n, want) : want;
+      const r = await fetch('/pdf/render?first=1&last=' + n + '&dpi=' + (+S.pdfDpi || 96), { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: d.file });
+      const j = await r.json(); if (!r.ok) throw new Error(d.name + ': ' + (j.error || 'HTTP ' + r.status));
+      j.pages.forEach(pg => {
+        const url = 'data:image/png;base64,' + pg.png;
+        items.push({ label: d.name + ' · pagina ' + pg.page, state: 'A page of a PDF document.', full: 'A page of a PDF document.', images: [url], thumbs: [url], group: d.name });
+      });
+    } else {
+      if (d.err || !d.pages) continue;
+      const chunks = chunkDoc(d, Math.max(200, +S.pdfChunk || 3000));
+      if (!chunks.length) { noText.push(d.name); continue; }
+      pickEven(chunks, +S.pdfMax || 0).forEach(c => {
+        const k = chunks.indexOf(c) + 1;
+        items.push({ label: d.name + ' · blocco ' + k + '/' + chunks.length + ' (p. ' + c.p1 + (c.p2 !== c.p1 ? '–' + c.p2 : '') + ')',
+          state: cutLen > 0 ? c.text.slice(0, cutLen) : c.text, full: c.text, group: d.name });
+      });
+    }
+  }
+  if (noText.length) toast('Nessun testo estraibile in: ' + noText.join(', ') + '. Prova «Pagine come immagini».');
+  return items;
+}
+
+async function collectItems() {
+  const max = +S.maxChars || 0, cut = s => max > 0 ? s.slice(0, max) : s;
+  if (inputMode === 'text') {
+    const raw = $('#txt').value;
+    const parts = S.textMode === 'single' ? [raw] : S.textMode === 'blank' ? raw.split(/\n\s*\n/) : raw.split(/\r?\n/);
+    return parts.map(s => s.trim()).filter(Boolean).map(s => ({ label: clip(s.replace(/\s+/g, ' '), 90), state: cut(s), full: s }));
+  }
+  if (inputMode === 'csv') {
+    if (!csvData) return [];
+    const cols = [...csvSel].sort((a, b) => a - b), hd = csvData.header;
+    if (!cols.length) throw new Error('Seleziona almeno una colonna da inviare.');
+    let rows = csvData.rows; if (+S.csvMax > 0) rows = rows.slice(0, +S.csvMax);
+    return rows.map(r => {
+      let s;
+      if (S.csvFormat === 'json') { const o = {}; cols.forEach(i => { o[hd[i]] = r[i] ?? ''; }); s = JSON.stringify(o); }
+      else if (S.csvFormat === 'text') s = cols.map(i => hd[i] + ': ' + (r[i] ?? '')).join('\n');
+      else s = cols.map(i => r[i] ?? '').join(' ');
+      const label = csvLabel >= 0 ? (r[csvLabel] ?? '') : s.replace(/\s+/g, ' ');
+      return { label: clip(label, 90), state: cut(s), full: s };
+    });
+  }
+  if (inputMode === 'pdf') return collectPdfItems();
+  if (!imgFiles.length) return [];
+  const urls = await Promise.all(imgFiles.map(f => resizedURL(f, +S.imgMax || 0)));
+  if (S.imgMode === 'all') return [{ label: imgFiles.length + ' immagini', state: S.imgCtx, full: S.imgCtx, images: urls, thumbs: imgFiles.map(f => f.thumb) }];
+  return imgFiles.map((f, i) => ({ label: f.name, state: S.imgCtx, full: S.imgCtx, images: [urls[i]], thumbs: [f.thumb] }));
+}
+
+/* ---------- esecuzione ---------- */
+let results = [], runQ = [], ctrl = null, running = false, fallbackDone = false, runStart = 0, renderTimer = null;
+function buildPayload(it, enc = S.imgEnc, src = Q) {
+  const p = { model: S.model.trim(), state: it.state, questions: buildQuestions(src) };
+  if (it.images && it.images.length) p.images = it.images.map(d => enc === 'raw' ? d.split(',')[1] : d);
+  return p;
+}
+async function post(body) {
+  const r = await fetch('/proxy/v1/systemone', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctrl.signal });
+  const txt = await r.text(); let j; try { j = JSON.parse(txt); } catch { /* testo semplice */ }
+  if (!r.ok) {
+    const m = j && (j.error?.message || j.error);
+    throw new Error((typeof m === 'string' ? m : m ? JSON.stringify(m) : txt.slice(0, 300)) || 'HTTP ' + r.status);
+  }
+  if (!j || !j.answers) throw new Error('Risposta senza "answers": ' + txt.slice(0, 200));
+  return j;
+}
+function numMap(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  const e = Object.entries(o);
+  return e.length && e.every(([, v]) => typeof v === 'number') ? Object.fromEntries(e) : null;
+}
+function parseAnswer(q, a) {
+  const out = { raw: a, probs: null, top: null, topP: null, p: null };
+  if (a == null || typeof a !== 'object') return out;
+  const pm = numMap(a.probabilities) || numMap(a.probs) || numMap(a.scores) || numMap(a.options);
+  if (q.type === 'noul') {
+    let p = typeof a.noul === 'number' ? a.noul : null;
+    if (p == null && pm) p = pm.yes ?? pm.true ?? pm['1'] ?? null;
+    out.p = p;
+    if (p != null) { out.probs = { yes: p, no: 1 - p }; out.top = p >= 0.5 ? 'yes' : 'no'; out.topP = Math.max(p, 1 - p); }
+    return out;
+  }
+  const names = q.type === 'choice' ? q.opts.map(o => o.k) : q.levels.filter(Boolean);
+  let probs = pm;
+  if (probs) {
+    const keys = Object.keys(probs);
+    if (keys.length === names.length && keys.every(k => /^\d+$/.test(k))) probs = Object.fromEntries(keys.map(k => [names[+k], probs[k]]));
+  }
+  out.probs = probs;
+  let top = q.type === 'choice' ? a.choice : (a.score ?? a.level ?? a.value ?? a.label ?? a.choice);
+  if (top == null && probs) top = Object.entries(probs).sort((x, y) => y[1] - x[1])[0][0];
+  out.top = top != null ? String(top) : null;
+  out.topP = probs && out.top in probs ? probs[out.top] : (typeof a.confidence === 'number' ? a.confidence : null);
+  return out;
+}
+async function runOne(r) {
+  r.status = 'run';
+  const t0 = performance.now();
+  try {
+    let resp;
+    try { resp = await post(buildPayload(r.it)); }
+    catch (e) {
+      if (ctrl.signal.aborted) throw e;
+      if (r.it.images && S.imgEnc === 'raw' && !fallbackDone) {
+        fallbackDone = true;
+        try { resp = await post(buildPayload(r.it, 'dataurl')); S.imgEnc = 'dataurl'; $('#imgEnc').value = 'dataurl'; saveS(); toast('Le immagini sono state accettate come data URL: cambio la codifica.'); }
+        catch { throw e; }
+      } else throw e;
+    }
+    r.ms = Math.round(performance.now() - t0);
+    r.answers = resp.answers; r.usage = resp.usage || null; r.status = 'ok';
+    r.parsed = {}; runQ.forEach(q => { r.parsed[q.id] = parseAnswer(q, resp.answers[q.id]); });
+  } catch (e) {
+    r.ms = Math.round(performance.now() - t0);
+    r.status = ctrl.signal.aborted ? 'stop' : 'err'; r.error = ctrl.signal.aborted ? 'interrotto' : e.message;
+  }
+}
+function showErrors(errs) {
+  const box = $('#qerrs'); box.replaceChildren();
+  if (errs.length) box.append(h('div', { class: 'errs' }, 'Correggi prima di eseguire:', h('ul', {}, errs.map(e => h('li', {}, e)))));
+  switchTab('q');
+}
+async function run() {
+  if (running) { ctrl.abort(); return; }
+  const errs = validate(); showErrors(errs); if (errs.length) return;
+  let items; try { items = await collectItems(); } catch (e) { toast(e.message); switchTab('in'); return; }
+  if (!items.length) { toast('Nessun input da elaborare.'); switchTab('in'); return; }
+  if (items.length > 300) {
+    const msg = items.length + ' richieste.' + (items.length > 5000
+      ? ' Sono molte per il browser: i risultati restano solo in questa pagina, che non va chiusa né ricaricata. Per volumi così grandi conviene lo script da terminale oppure un campione (Max righe).' : '')
+      + ' Continuare?';
+    if (!confirm(msg)) return;
+  }
+  runQ = JSON.parse(JSON.stringify(Q)); fallbackDone = false;
+  results = items.map((it, i) => ({ i, it, status: 'queue' })); page = 0;
+  ctrl = new AbortController(); running = true; runStart = performance.now();
+  if (results.some(r => r.it.group)) S.view = 'docs';
+  setRunUI(); switchTab('res'); renderRefSelect(); renderResults();
+  let next = 0;
+  const worker = async () => {
+    while (!ctrl.signal.aborted) {
+      const k = next++; if (k >= results.length) break;
+      await runOne(results[k]); scheduleRender();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, +S.conc || 1) }, worker));
+  results.forEach(r => { if (r.status === 'queue') { r.status = 'stop'; r.error = 'non eseguito'; } });
+  running = false; setRunUI(); renderResults();
+}
+function setRunUI() {
+  const b = $('#btnRun'); b.textContent = running ? '■ Stop' : '▶ Esegui'; b.classList.toggle('stop', running);
+}
+function scheduleRender() { if (renderTimer) return; renderTimer = setTimeout(() => { renderTimer = null; renderResults(); }, results.length > 2000 ? 1500 : 250); }
+
+/* ---------- risultati ---------- */
+let sort = { col: 'i', dir: 1 };
+let page = 0;
+const PAGE_ROWS = 200, PAGE_CARDS = 48;
+function refQuestion() { return runQ.find(q => q.id === S.refQ && q.type === 'noul') || runQ.find(q => q.type === 'noul') || null; }
+function renderRefSelect() {
+  const src = results.length ? runQ : Q, sel = $('#refQ'); sel.replaceChildren();
+  const list = src.filter(q => q.type === 'noul');
+  if (!list.length) sel.append(h('option', { value: '' }, '(nessuna domanda Sì/No)'));
+  list.forEach(q => sel.append(h('option', { value: q.id }, q.id)));
+  if (list.some(q => q.id === S.refQ)) sel.value = S.refQ; else if (list.length) { S.refQ = list[0].id; sel.value = S.refQ; }
+}
+const isHit = r => { const q = refQuestion(); const p = q && r.parsed?.[q.id]?.p; return p != null && p >= S.thr; };
+function getVal(r, col) {
+  if (col === 'i') return r.i;
+  if (col === 'label') return r.it.label.toLowerCase();
+  if (col === 'ms') return r.ms ?? -1;
+  const q = runQ.find(x => x.id === col); const pa = r.parsed?.[col];
+  if (!q || !pa) return null;
+  return q.type === 'noul' ? pa.p : (pa.topP ?? pa.top);
+}
+function visibleRows() {
+  const needle = $('#search').value.trim().toLowerCase();
+  let rows = results.filter(r => !needle || (r.it.full || '').toLowerCase().includes(needle) || r.it.label.toLowerCase().includes(needle));
+  if (S.onlyHits && refQuestion()) rows = rows.filter(isHit);
+  if (sort.col === 'i' && sort.dir === 1) return rows;
+  const { col, dir } = sort;
+  return rows.slice().sort((a, b) => {
+    const x = getVal(a, col), y = getVal(b, col);
+    if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+    return (x < y ? -1 : x > y ? 1 : 0) * dir;
+  });
+}
+function eta(done) {
+  if (!done) return ' · in corso…';
+  const el = (performance.now() - runStart) / 1000, rem = el / done * (results.length - done);
+  const f = x => x >= 3600 ? (x / 3600).toFixed(1) + ' h' : x >= 60 ? Math.round(x / 60) + ' min' : Math.round(x) + ' s';
+  return ' · ' + (done / el).toFixed(1) + ' elementi/s · mancano circa ' + f(rem);
+}
+function renderSummary() {
+  const done = results.filter(r => r.status === 'ok' || r.status === 'err' || r.status === 'stop').length;
+  const errs = results.filter(r => r.status === 'err').length;
+  const oks = results.filter(r => r.status === 'ok');
+  const avg = oks.length ? Math.round(oks.reduce((s, r) => s + r.ms, 0) / oks.length) : 0;
+  const q = refQuestion(), hits = q ? oks.filter(isHit).length : null;
+  $('#progBar').style.width = results.length ? (done / results.length * 100) + '%' : '0';
+  $('#sumText').textContent = results.length
+    ? done + '/' + results.length + ' completati · ' + errs + ' errori · media ' + avg + ' ms' + (q ? ' · ' + hits + ' sopra soglia (' + q.id + ' ≥ ' + S.thr.toFixed(2) + ')' : '') + (running ? eta(done) : '')
+    : 'Nessun risultato.';
+}
+function renderResults() {
+  renderSummary();
+  if (!$('#tab-res').classList.contains('on')) return;
+  const hasGroups = results.some(r => r.it.group);
+  const hasRef = !!refQuestion(); $('#onlyHits').disabled = !hasRef; $('#onlyHits').parentElement.title = hasRef ? '' : 'Serve almeno una domanda Sì/No: le soglie valgono solo per quelle';
+  $('#btnDocs').hidden = !hasGroups; $('#docRuleWrap').hidden = !hasGroups;
+  if (S.view === 'docs' && !hasGroups) S.view = 'table';
+  $$('#viewBtns button').forEach(b => b.classList.toggle('on', b.dataset.view === S.view));
+  const body = $('#resBody'); body.replaceChildren();
+  if (!results.length) { body.append(h('p', { class: 'muted' }, 'Configura le domande, scegli un input e premi «Esegui».')); return; }
+  const rows = visibleRows();
+  if (S.view === 'table') body.append(pager(rows.length, PAGE_ROWS), tableView(slicePage(rows, PAGE_ROWS)));
+  else if (S.view === 'cards') body.append(pager(rows.length, PAGE_CARDS), cardsView(slicePage(rows, PAGE_CARDS)));
+  else if (S.view === 'docs') body.append(docsView());
+  else if (S.view === 'charts') body.append(chartsView());
+  else body.append(results.length > 50 ? h('p', { class: 'muted small' }, 'Mostrati i primi 50 di ' + results.length + ' elementi: «Esporta JSON» salva tutto.') : null,
+    h('pre', { class: 'json' }, JSON.stringify(exportObj(50), null, 2)));
+}
+function slicePage(rows, size) {
+  const last = Math.max(0, Math.ceil(rows.length / size) - 1);
+  if (page > last) page = last;
+  return rows.slice(page * size, (page + 1) * size);
+}
+function pager(total, size) {
+  const pages = Math.max(1, Math.ceil(total / size));
+  if (page >= pages) page = pages - 1;
+  const go = pg => () => { page = Math.min(pages - 1, Math.max(0, pg)); renderResults(); };
+  return h('div', { class: 'bar-row', style: 'margin:0 0 8px' },
+    h('button', { disabled: page === 0, onclick: go(0) }, '«'),
+    h('button', { disabled: page === 0, onclick: go(page - 1) }, '‹'),
+    h('span', { class: 'muted small' }, 'pagina ' + (page + 1) + ' di ' + pages + ' · ' + total + ' elementi'),
+    h('button', { disabled: page >= pages - 1, onclick: go(page + 1) }, '›'),
+    h('button', { disabled: page >= pages - 1, onclick: go(pages - 1) }, '»'));
+}
+function labelCell(r) {
+  const t = h('div', { class: 't' });
+  if (r.it.thumbs && r.it.thumbs[0]) t.append(h('img', { src: r.it.thumbs[0], alt: '' }));
+  t.append(h('span', { class: 'txt' }, r.it.label));
+  return h('td', { class: 'lab' }, t);
+}
+function answerCell(q, r) {
+  const pa = r.parsed?.[q.id];
+  if (r.status === 'queue' || r.status === 'run') return h('td', { class: 'muted' }, '…');
+  if (!pa) return h('td', {}, '–');
+  if (q.type === 'noul') {
+    return h('td', { class: 'num', title: 'sì ' + fmtP(pa.p) + ' · no ' + fmtP(pa.p == null ? null : 1 - pa.p) },
+      h('span', { class: 'meter' }, h('span', { style: 'width:' + ((pa.p ?? 0) * 100).toFixed(1) + '%' })), h('b', {}, fmtP(pa.p)));
+  }
+  const title = pa.probs ? Object.entries(pa.probs).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + fmtP(v)).join('\n') : '';
+  return h('td', { class: 'ch', title }, h('span', { class: 'top' }, pa.top ?? '–'), ' ', h('span', { class: 'muted' }, pa.topP != null ? fmtP(pa.topP) : ''));
+}
+function tableView(rows) {
+  const th = (col, text) => h('th', { class: sort.col === col ? 'sorted' : '', onclick: () => { sort = { col, dir: sort.col === col ? -sort.dir : (col === 'i' || col === 'label' ? 1 : -1) }; page = 0; renderResults(); } },
+    text + (sort.col === col ? (sort.dir > 0 ? ' ▲' : ' ▼') : ''));
+  const head = h('tr', {}, th('i', '#'), th('label', 'Elemento'), runQ.map(q => th(q.id, q.id)), th('ms', 'ms'));
+  const tbody = h('tbody', {}, rows.map(r => {
+    const tr = h('tr', { class: isHit(r) ? 'hit' : '', onclick: () => showDetail(r) }, h('td', {}, r.i + 1), labelCell(r));
+    if (r.status === 'err' || r.status === 'stop') tr.append(h('td', { class: 'err', colspan: runQ.length }, r.error));
+    else runQ.forEach(q => tr.append(answerCell(q, r)));
+    tr.append(h('td', { class: 'muted' }, r.ms ?? ''));
+    return tr;
+  }));
+  return h('div', {}, h('div', { class: 'muted small', style: 'margin-bottom:6px' }, 'Clic su una riga per il dettaglio, clic sull\'intestazione per ordinare.'),
+    h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, head), tbody)));
+}
+function probBars(probs, top) {
+  return h('div', { class: 'pbars' }, Object.entries(probs || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    h('div', { class: 'pb' + (k === top ? ' top' : '') }, h('span', { class: 'pbk', title: k }, k),
+      h('span', { class: 'meter' }, h('span', { style: 'width:' + (v * 100).toFixed(1) + '%' })), h('span', { class: 'pbv' }, fmtP(v)))));
+}
+function cardsView(rows) {
+  return h('div', { class: 'cards' }, rows.map(r => {
+    const c = h('div', { class: 'card' + (isHit(r) ? ' hit' : ''), onclick: () => showDetail(r) },
+      h('h4', {}, h('span', { class: 'pill' }, '#' + (r.i + 1)), h('span', { style: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }, clip(r.it.label, 60))));
+    if (r.it.thumbs) c.append(h('div', { class: 'imgs' }, r.it.thumbs.slice(0, 4).map(t => h('img', { src: t, alt: '' }))));
+    if (r.status === 'err' || r.status === 'stop') { c.append(h('div', { class: 'errs' }, r.error)); return c; }
+    if (r.status !== 'ok') { c.append(h('div', { class: 'muted' }, 'in attesa…')); return c; }
+    runQ.forEach(q => { const pa = r.parsed[q.id]; c.append(h('div', { class: 'qn' }, q.id), pa.probs ? probBars(pa.probs, pa.top) : h('div', { class: 'small' }, pa.top ?? JSON.stringify(pa.raw))); });
+    return c;
+  }));
+}
+function histSVG(vals, thr) {
+  const W = 420, H = 170, L = 28, B = 22, T = 16, bins = new Array(10).fill(0);
+  vals.forEach(v => { bins[Math.min(9, Math.floor(v * 10))]++; });
+  const mx = Math.max(1, ...bins), bw = (W - L - 6) / 10;
+  const s = sv('svg', { viewBox: `0 0 ${W} ${H}`, width: '100%', role: 'img' });
+  bins.forEach((n, i) => {
+    const bh = (H - B - T) * n / mx, x = L + i * bw;
+    s.append(sv('rect', { class: 'bar', x: x + 2, y: H - B - bh, width: bw - 4, height: bh, rx: 2 }));
+    if (n) s.append(sv('text', { x: x + bw / 2, y: H - B - bh - 3, 'text-anchor': 'middle' }, n));
+  });
+  [0, 0.5, 1].forEach(v => s.append(sv('text', { x: L + v * (W - L - 6), y: H - 6, 'text-anchor': v === 0 ? 'start' : v === 1 ? 'end' : 'middle' }, v)));
+  s.append(sv('line', { class: 'thr', x1: L + thr * (W - L - 6), x2: L + thr * (W - L - 6), y1: T - 6, y2: H - B }));
+  return s;
+}
+function hbarsSVG(entries) {
+  const rowH = 22, W = 420, L = 130, mx = Math.max(1, ...entries.map(e => e[1]));
+  const s = sv('svg', { viewBox: `0 0 ${W} ${Math.max(1, entries.length) * rowH + 4}`, width: '100%', role: 'img' });
+  entries.forEach(([k, n], i) => {
+    const y = i * rowH + 2, w = (W - L - 40) * n / mx;
+    s.append(sv('text', { x: L - 6, y: y + 14, 'text-anchor': 'end' }, clip(k, 20)),
+      sv('rect', { class: 'bar', x: L, y: y + 3, width: Math.max(w, n ? 2 : 0), height: rowH - 8, rx: 2 }),
+      sv('text', { x: L + w + 5, y: y + 14 }, n));
+  });
+  return s;
+}
+function chartsView() {
+  const oks = results.filter(r => r.status === 'ok');
+  if (!oks.length) return h('p', { class: 'muted' }, 'Nessun risultato valido da mostrare.');
+  return h('div', { class: 'charts' }, runQ.map(q => {
+    const box = h('div', { class: 'chart' }, h('h4', {}, q.id), h('div', { class: 'muted small', style: 'margin-bottom:6px' }, q.instructions));
+    if (q.type === 'noul') {
+      const vals = oks.map(r => r.parsed[q.id].p).filter(v => v != null);
+      const above = vals.filter(v => v >= S.thr).length;
+      box.append(h('div', { class: 'small muted' }, 'Distribuzione della probabilità di «sì» · linea rossa = soglia ' + S.thr.toFixed(2) + ' · ' + above + '/' + vals.length + ' sopra soglia'), histSVG(vals, S.thr));
+    } else {
+      const names = q.type === 'choice' ? q.opts.map(o => o.k) : q.levels.filter(Boolean), counts = Object.fromEntries(names.map(n => [n, 0]));
+      oks.forEach(r => { const t = r.parsed[q.id].top; if (t != null) counts[t] = (counts[t] || 0) + 1; });
+      box.append(h('div', { class: 'small muted' }, 'Numero di elementi per opzione più probabile'), hbarsSVG(Object.entries(counts)));
+      const avg = {}; let n = 0;
+      oks.forEach(r => { const pr = r.parsed[q.id].probs; if (pr) { n++; for (const [k, v] of Object.entries(pr)) avg[k] = (avg[k] || 0) + v; } });
+      if (n) { Object.keys(avg).forEach(k => { avg[k] /= n; }); box.append(h('div', { class: 'small muted', style: 'margin-top:8px' }, 'Probabilità media per opzione'), probBars(avg, null)); }
+    }
+    return box;
+  }));
+}
+/* ---------- vista per documento ---------- */
+function docGroups() {
+  const m = new Map();
+  results.forEach(r => { const g = r.it.group; if (!g) return; if (!m.has(g)) m.set(g, []); m.get(g).push(r); });
+  return [...m.entries()].map(([name, rs]) => ({ name, rs, ok: rs.filter(r => r.status === 'ok'), err: rs.filter(r => r.status === 'err').length }));
+}
+function docStat(g, q) {
+  const ps = g.ok.map(r => r.parsed?.[q.id]?.p).filter(v => v != null);
+  if (!ps.length) return null;
+  const max = ps.reduce((a, b) => Math.max(a, b), 0), mean = ps.reduce((a, b) => a + b, 0) / ps.length;
+  const hits = ps.filter(v => v >= S.thr).length, frac = hits / ps.length;
+  const score = S.docRule === 'mean' ? mean : S.docRule === 'majority' ? frac : max;
+  const yes = S.docRule === 'majority' ? frac > 0.5 : score >= S.thr;
+  return { max, mean, hits, n: ps.length, frac, score, yes };
+}
+function docChoice(g, q) {
+  const cnt = {}, sum = {}; let n = 0;
+  g.ok.forEach(r => {
+    const pa = r.parsed?.[q.id]; if (!pa) return; n++;
+    if (pa.top != null) cnt[pa.top] = (cnt[pa.top] || 0) + 1;
+    if (pa.probs) for (const [k, v] of Object.entries(pa.probs)) sum[k] = (sum[k] || 0) + v;
+  });
+  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+  return top ? { top: top[0], count: top[1], n, mean: (sum[top[0]] || 0) / n } : null;
+}
+function docsView() {
+  const gs = docGroups(), q = refQuestion();
+  if (q) gs.forEach(g => { g._s = docStat(g, q); });
+  gs.sort((a, b) => (b._s?.score ?? -1) - (a._s?.score ?? -1));
+  const ruleTxt = { max: 'massimo tra i blocchi', mean: 'media dei blocchi', majority: 'più di metà dei blocchi sopra soglia' }[S.docRule];
+  const head = h('tr', {}, h('th', {}, 'Documento'), h('th', {}, 'Elementi'),
+    q ? h('th', {}, 'Verdetto «' + q.id + '»') : null, q ? h('th', {}, 'Punteggio') : null, runQ.map(x => h('th', {}, x.id)));
+  const body = h('tbody', {}, gs.map(g => {
+    const tr = h('tr', { onclick: () => showDocDetail(g) }, h('td', { class: 'lab' }, h('span', { class: 'txt' }, g.name)),
+      h('td', {}, g.ok.length + '/' + g.rs.length + (g.err ? ' · ' + g.err + ' errori' : '')));
+    if (q) {
+      const s = g._s;
+      tr.append(h('td', {}, s ? h('span', { class: 'verdict ' + (s.yes ? 'yes' : 'no') }, s.yes ? 'SÌ' : 'no') : '–'),
+        h('td', { class: 'num' }, s ? [h('span', { class: 'meter' }, h('span', { style: 'width:' + (s.score * 100).toFixed(1) + '%' })), h('b', {}, fmtP(s.score))] : '–'));
+    }
+    runQ.forEach(x => {
+      if (x.type === 'noul') {
+        const s = docStat(g, x);
+        tr.append(h('td', { class: 'muted' }, s ? 'max ' + fmtP(s.max) + ' · media ' + fmtP(s.mean) + ' · ' + s.hits + '/' + s.n + ' sopra soglia' : '–'));
+      } else {
+        const c = docChoice(g, x);
+        tr.append(h('td', { class: 'ch' }, c ? [h('span', { class: 'top' }, c.top), ' ', h('span', { class: 'muted' }, c.count + '/' + c.n + ' · ' + fmtP(c.mean))] : '–'));
+      }
+    });
+    return tr;
+  }));
+  return h('div', {}, h('div', { class: 'muted small', style: 'margin-bottom:6px' },
+    'Verdetto sì/no: ' + ruleTxt + (S.docRule === 'majority' ? '' : ' ≥ soglia ' + S.thr.toFixed(2)) + '. Clic su un documento per vedere i singoli blocchi.'),
+    h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, head), body)));
+}
+function showDocDetail(g) {
+  const b = $('#dlgBody'); b.replaceChildren();
+  b.append(h('h2', {}, g.name), h('div', { class: 'muted small' }, g.rs.length + ' elementi · ' + g.ok.length + ' elaborati'));
+  const tb = h('tbody', {}, g.rs.map(r => h('tr', { onclick: () => showDetail(r) },
+    h('td', { class: 'lab' }, r.it.label.replace(g.name + ' · ', '')),
+    runQ.map(x => {
+      const pa = r.parsed?.[x.id];
+      return h('td', { class: x.type === 'noul' ? 'num' : 'ch' }, !pa ? (r.status === 'err' ? 'errore' : '…') : x.type === 'noul' ? fmtP(pa.p) : (pa.top ?? '–'));
+    }),
+    h('td', { class: 'muted' }, clip((r.it.full || '').replace(/\s+/g, ' '), 90)))));
+  b.append(h('div', { class: 'tablewrap', style: 'max-height:50vh;margin-top:10px' }, h('table', {},
+    h('thead', {}, h('tr', {}, h('th', {}, 'Elemento'), runQ.map(x => h('th', {}, x.id)), h('th', {}, 'Contenuto'))), tb)));
+  const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
+}
+
+function showDetail(r) {
+  const b = $('#dlgBody'); b.replaceChildren();
+  b.append(h('h2', {}, '#' + (r.i + 1) + ' · ' + clip(r.it.label, 80)),
+    h('div', { class: 'muted small' }, 'stato: ' + r.status + (r.ms != null ? ' · ' + r.ms + ' ms' : '') + (r.usage ? ' · token in ' + r.usage.input_tokens : '')));
+  if (r.it.images) b.append(h('div', {}, r.it.images.slice(0, 6).map(u => h('img', { class: 'big', src: u, alt: '' }))));
+  b.append(h('h3', {}, 'Input'), h('pre', {}, r.it.full));
+  if (r.error) b.append(h('div', { class: 'errs' }, r.error));
+  if (r.parsed) runQ.forEach(q => {
+    const pa = r.parsed[q.id];
+    b.append(h('h3', {}, q.id + ' · ' + TYPES[q.type]), pa.probs ? probBars(pa.probs, pa.top) : h('div', {}, pa.top ?? '–'));
+  });
+  if (r.answers) b.append(h('h3', {}, 'Risposta grezza'), h('pre', {}, JSON.stringify(r.answers, null, 2)));
+  const dlg = $('#dlg'); if (!dlg.open) dlg.showModal();
+}
+
+/* ---------- export ---------- */
+function exportObj(limit) {
+  return { model: S.model, questions: buildQuestions(runQ), results: (limit ? results.slice(0, limit) : results).map(r => ({
+    n: r.i + 1, label: r.it.label, group: r.it.group, status: r.status, ms: r.ms, error: r.error || undefined, input: r.it.full,
+    answers: r.parsed ? Object.fromEntries(runQ.map(q => [q.id, { top: r.parsed[q.id].top, p: r.parsed[q.id].p ?? undefined, probs: r.parsed[q.id].probs, raw: r.answers[q.id] }])) : undefined })) };
+}
+function exportCSV() {
+  if (!results.length) { toast('Niente da esportare.'); return; }
+  const names = q => q.type === 'choice' ? q.opts.map(o => o.k) : q.levels.filter(Boolean);
+  const hasG = results.some(r => r.it.group);
+  const cols = ['n', 'elemento', ...(hasG ? ['documento'] : []), 'stato', 'ms'];
+  runQ.forEach(q => { if (q.type === 'noul') cols.push(q.id + '_p_si'); else { cols.push(q.id + '_top', q.id + '_conf'); names(q).forEach(n => cols.push(q.id + '_p_' + n)); } });
+  cols.push('errore', 'input');
+  const esc = v => { v = v == null ? '' : String(v); return /[",\n\r;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const lines = [cols.map(esc).join(',')];
+  results.forEach(r => {
+    const row = [r.i + 1, r.it.label, ...(hasG ? [r.it.group || ''] : []), r.status, r.ms ?? ''];
+    runQ.forEach(q => {
+      const pa = r.parsed?.[q.id];
+      if (q.type === 'noul') row.push(pa?.p ?? '');
+      else { row.push(pa?.top ?? '', pa?.topP ?? ''); names(q).forEach(n => row.push(pa?.probs?.[n] ?? '')); }
+    });
+    row.push(r.error || '', r.it.full);
+    lines.push(row.map(esc).join(','));
+  });
+  download('d3_risultati.csv', 'text/csv;charset=utf-8', '\ufeff' + lines.join('\n'));
+}
+
+/* ---------- anteprima richiesta ---------- */
+async function previewRequest() {
+  const errs = validate(); showErrors(errs); if (errs.length) return;
+  let items; try { items = await collectItems(); } catch (e) { toast(e.message); return; }
+  if (!items.length) { toast('Nessun input: aggiungine uno per vedere la richiesta.'); return; }
+  const p = buildPayload(items[0]);
+  const shown = JSON.stringify(p, (k, v) => k === 'images' ? v.map(s => '<base64, ' + s.length + ' caratteri>') : v, 2);
+  const b = $('#dlgBody'); b.replaceChildren(
+    h('h2', {}, 'Richiesta per il primo elemento (' + items.length + ' in totale)'),
+    h('div', { class: 'muted small' }, 'POST /v1/systemone'),
+    h('pre', { style: 'max-height:55vh' }, shown));
+  const cp = $('#dlgCopy'); cp.hidden = false; cp.textContent = p.images ? 'Copia JSON' : 'Copia curl';
+  cp.onclick = async () => {
+    let base = 'http://localhost:11434'; try { base = (await (await fetch('/config')).json()).ollama; } catch { /* default */ }
+    const txt = p.images ? shown : "curl -s " + base.replace(/\/$/, '') + "/v1/systemone -H 'Content-Type: application/json' -d '" + JSON.stringify(p).replace(/'/g, "'\\''") + "'";
+    try { await navigator.clipboard.writeText(txt); toast('Copiato.'); } catch { toast('Copia non riuscita.'); }
+  };
+  $('#dlg').showModal();
+}
+
+/* ---------- connessione ---------- */
+async function checkConn() {
+  const dot = $('#dot'), t = $('#connText'); dot.className = 'dot'; t.textContent = 'Verifica connessione…';
+  let base = ''; try { const cfg = await (await fetch('/config')).json(); base = cfg.ollama; tools = cfg.tools || {}; renderPdfList(); } catch { /* ignora */ }
+  try {
+    const r = await fetch('/proxy/api/tags'); const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+    const names = (j.models || []).map(m => m.name);
+    const dl = $('#models'); dl.replaceChildren(...names.map(n => h('option', { value: n })));
+    dot.className = 'dot ok';
+    let known = names.includes(S.model) || names.includes(S.model + ':latest');
+    // modello predefinito non scaricato ma altre varianti d3 presenti: usa la prima
+    if (!known && S.model === 'd3:latest') {
+      const alt = names.find(n => /^d3(:|$)/.test(n));
+      if (alt) { S.model = alt; saveS(); const mi = $('#model'); if (mi) mi.value = alt; known = true; }
+    }
+    t.textContent = 'Ollama ' + base + ' · ' + names.length + ' modelli' + (known ? '' : ' · «' + S.model + '» non risulta scaricato');
+  } catch (e) { dot.className = 'dot bad'; t.textContent = String(e.message).slice(0, 160); }
+}
+
+/* ---------- navigazione e collegamenti ---------- */
+function switchTab(t) {
+  $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $$('section.pane').forEach(s => s.classList.toggle('on', s.id === 'tab-' + t));
+  if (t === 'res') renderResults();
+}
+function switchInput(m) {
+  inputMode = m;
+  $$('.subtabs [data-in]').forEach(b => b.classList.toggle('on', b.dataset.in === m));
+  ['text', 'csv', 'img', 'pdf'].forEach(k => { $('#in-' + k).hidden = k !== m; });
+}
+function bindSetting(id, key, num) {
+  const e = $('#' + id);
+  if (e.type === 'checkbox') e.checked = !!S[key]; else e.value = S[key];
+  e.addEventListener('change', () => {
+    S[key] = e.type === 'checkbox' ? e.checked : num ? +e.value : e.value; saveS();
+    if (key === 'csvHeader' || key === 'csvDelim') loadCSVText($('#csvText').value);
+  });
+}
+function init() {
+  window.addEventListener('beforeunload', e => { if (running) { e.preventDefault(); e.returnValue = ''; } });
+  $('#model').value = S.model;
+  $('#model').addEventListener('input', e => { S.model = e.target.value.trim(); saveS(); });
+  $('#model').addEventListener('change', checkConn);
+  bindSetting('conc', 'conc', true); bindSetting('textMode', 'textMode'); bindSetting('csvHeader', 'csvHeader'); bindSetting('csvDelim', 'csvDelim');
+  bindSetting('csvFormat', 'csvFormat'); bindSetting('csvMax', 'csvMax', true); bindSetting('imgMax', 'imgMax', true); bindSetting('imgMode', 'imgMode');
+  bindSetting('imgEnc', 'imgEnc'); bindSetting('maxChars', 'maxChars', true);
+  bindSetting('pdfMode', 'pdfMode'); bindSetting('pdfChunk', 'pdfChunk', true); bindSetting('pdfMax', 'pdfMax', true);
+  bindSetting('pdfPages', 'pdfPages', true); bindSetting('pdfDpi', 'pdfDpi', true); bindSetting('docRule', 'docRule');
+  $('#docRule').addEventListener('change', renderResults);
+  $('#imgCtx').value = S.imgCtx; $('#imgCtx').addEventListener('input', e => { S.imgCtx = e.target.value; saveS(); });
+  $('#thr').value = S.thr; $('#thrVal').textContent = S.thr.toFixed(2);
+  $('#thr').addEventListener('input', e => { S.thr = +e.target.value; $('#thrVal').textContent = S.thr.toFixed(2); saveS(); renderResults(); });
+  $('#onlyHits').checked = !!S.onlyHits;
+  $('#onlyHits').addEventListener('change', e => { S.onlyHits = e.target.checked; page = 0; saveS(); renderResults(); });
+  $('#refQ').addEventListener('change', e => { S.refQ = e.target.value; saveS(); renderResults(); });
+  $('#search').addEventListener('input', () => { page = 0; renderResults(); });
+  $$('#viewBtns button').forEach(b => b.addEventListener('click', () => { S.view = b.dataset.view; page = 0; saveS(); renderResults(); }));
+  $$('nav.tabs button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  $$('.subtabs [data-in]').forEach(b => b.addEventListener('click', () => switchInput(b.dataset.in)));
+
+  $('#btnRun').addEventListener('click', run);
+  $('#btnPreview').addEventListener('click', previewRequest);
+  $('#btnConn').addEventListener('click', checkConn);
+  $('#btnCSV').addEventListener('click', exportCSV);
+  $('#btnJSON').addEventListener('click', () => download('d3_risultati.json', 'application/json', JSON.stringify(exportObj(), null, 2)));
+  $('#dlgClose').addEventListener('click', () => $('#dlg').close());
+  $('#dlg').addEventListener('close', () => { $('#dlgCopy').hidden = true; });
+
+  renderPresetSel();
+  $('#btnLoadSet').addEventListener('click', loadSet);
+  $('#btnAddQ').addEventListener('click', () => { Q.push(mkQ('noul', 'domanda_' + (Q.length + 1), '')); persistQ(); renderQuestions(); });
+  $('#btnSaveSet').addEventListener('click', () => {
+    const n = prompt('Nome del set:'); if (!n) return;
+    const sets = store.get('sets', {}); sets[n.trim()] = JSON.parse(JSON.stringify(Q)); store.set('sets', sets); renderPresetSel(); $('#presetSel').value = 's:' + n.trim(); toast('Set salvato.');
+  });
+  $('#btnDelSet').addEventListener('click', () => {
+    const v = $('#presetSel').value; if (!v.startsWith('s:')) { toast('Seleziona un set salvato da eliminare.'); return; }
+    const sets = store.get('sets', {}); delete sets[v.slice(2)]; store.set('sets', sets); renderPresetSel(); toast('Set eliminato.');
+  });
+  $('#btnExpQ').addEventListener('click', () => download('d3_domande.json', 'application/json', JSON.stringify(Q, null, 2)));
+  $('#btnImpQ').addEventListener('click', () => $('#fileImpQ').click());
+  $('#fileImpQ').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      if (!Array.isArray(j)) throw new Error('il file deve contenere un elenco di domande');
+      Q = j.map(q => Object.assign(mkQ(q.type || 'noul', q.id || 'domanda', q.instructions || ''), q)); Q.forEach(ensureDefaults);
+      persistQ(); renderQuestions(); toast('Domande importate.');
+    } catch (err) { toast('Import non riuscito: ' + err.message); }
+    e.target.value = '';
+  });
+
+  const drop = (zone, input, handler) => {
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => { handler([...input.files]); input.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
+    zone.addEventListener('drop', e => handler([...e.dataTransfer.files]));
+  };
+  drop($('#imgDrop'), $('#imgFile'), addImages);
+  drop($('#pdfDrop'), $('#pdfFile'), addPdfs);
+  drop($('#csvDrop'), $('#csvFile'), async fs => { if (fs[0]) { const t = await fs[0].text(); $('#csvText').value = t.length > 200000 ? '' : t; loadCSVText(t); toast(fs[0].name + ' caricato.'); } });
+  $('#csvText').addEventListener('change', e => loadCSVText(e.target.value));
+  $('#csvLabel').addEventListener('change', e => { csvLabel = +e.target.value; });
+
+  Q.forEach(ensureDefaults); renderQuestions(); renderCSV(); renderImgs(); renderResults(); setRunUI(); checkConn();
+}
+init();
+</script>
+</body>
+</html>
